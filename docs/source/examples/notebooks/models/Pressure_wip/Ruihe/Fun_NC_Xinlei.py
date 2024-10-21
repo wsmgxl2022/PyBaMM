@@ -2103,21 +2103,42 @@ def Compare_Exp_Model(
     return mpe_all
 
 # read scan files:
+# def load_combinations_from_csv(Para_file):
+#     dataframe = pd.read_csv(Para_file)
+#     parameter_names = dataframe.columns.tolist()
+#     combinations = dataframe.values.tolist()
+#     # Get all para
+#     Para_dict_list = []
+#     # get all dictionaries
+#     for combination in combinations:
+#         input_dict = {}
+#         for parameter_name,para_value in zip(parameter_names,combination ):
+#             input_dict[parameter_name] = para_value
+#         Para_dict_list.append(input_dict)
+#     print(f"Total scan case is {len(Para_dict_list)}")
+
+#     return Para_dict_list
+
 def load_combinations_from_csv(Para_file):
     dataframe = pd.read_csv(Para_file)
+    # 清理数据，确保格式正确
+    dataframe.reset_index(inplace=True)
+    dataframe.columns = ['Scan No', 'Exp No.'] + dataframe.columns[2:].tolist()
+    
     parameter_names = dataframe.columns.tolist()
     combinations = dataframe.values.tolist()
-    # Get all para
+
+    # 获取所有参数字典
     Para_dict_list = []
-    # get all dictionaries
     for combination in combinations:
         input_dict = {}
-        for parameter_name,para_value in zip(parameter_names,combination ):
+        for parameter_name, para_value in zip(parameter_names, combination):
             input_dict[parameter_name] = para_value
         Para_dict_list.append(input_dict)
-    print(f"Total scan case is {len(Para_dict_list)}")
 
+    print(f"总扫描案例数为 {len(Para_dict_list)}")
     return Para_dict_list
+
 
 def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
     """ TODO: if at the end of ageing cycles the cell SOC is NOT 100%SOC, then
@@ -2238,14 +2259,14 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
             exp_AGE_text = [(
                 f"Discharge at 1C until {V_min}V", 
                 "Rest for 1 second", 
-                f"Charge at 1/3C until {V_max}V",
+                f"Charge at C/3 until {V_max}V",
                 f"Hold at {V_max} V until C/20",
                 ),  ] 
             step_AGE_CD =0;   step_AGE_CC =2;   step_AGE_CV =3
         else:
             exp_AGE_text = [(
                 f"Discharge at 1C until {V_min}V", 
-                f"Charge at 1/3C until {V_max}V",
+                f"Charge at C/3 until {V_max}V",
                 f"Hold at {V_max} V until C/20",
                 ),  ] 
             step_AGE_CD =0;   step_AGE_CC =1;   step_AGE_CV =2
@@ -2257,9 +2278,9 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
     # Added 241020 Xinlei
     exp_RPT_Warwick = [(
         # 1/3C discharge cycle 
-        f"Discharge at 1/3C until {V_min} V",  
+        f"Discharge at C/3 until {V_min} V",  
         "Rest for 1 hours",  
-        f"Charge at 1/3C until {V_max} V",
+        f"Charge at C/3 until {V_max} V",
         f"Hold at {V_max}V until C/20",
         "Rest for 1 hours",
         # 1C discharge capacity 
@@ -2422,28 +2443,12 @@ def Get_tot_cyc(Runshort,index_exp,Temp_K,Scan_i):
             tot_cyc = 1170*10; cyc_age = 78; update = 78;
         if index_exp == 9:
             tot_cyc = 1170*10; cyc_age = 78; update = 78;
+    # Xinlei add 100 cycles    
+    elif Runshort == "War":
+        if index_exp == 10:
+            tot_cyc = 100; cyc_age = 20; update = 20;
     elif Runshort == "Reservoir":
         pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     else:  # really running short    
         if index_exp in list(np.arange(1,10)):
@@ -2830,8 +2835,10 @@ def Run_P2_Excel(
     index_i   = Para_dict_i["Scan No"]  
     Scan_i = int(index_i)
     print(f'Start Now! Scan {Scan_i} Re {Re_No}')  
-    index_exp = int(Para_dict_i["Exp No."]) # index for experiment set, can now go for 2,3,5
+    index_exp = Para_dict_i["Exp No."] # index for experiment set, can now go for 2,3,5
+    print("Exp:", index_exp)
     Temp_K = Para_dict_i["Ageing temperature"]  
+    print("T:", Temp_K)
     Round_No = f"Case_{Scan_i}_Exp_{index_exp}_{Temp_K}oC"  # index to identify different rounds of running 
     # Load Niall's data
     [
