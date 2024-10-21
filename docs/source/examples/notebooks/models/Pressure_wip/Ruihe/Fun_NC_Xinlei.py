@@ -2289,12 +2289,15 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
         f"Discharge at 0.1C until {V_min} V",
         "Rest for 1 hours",
     
-        # Top-up
-        f"Charge at 1/3C until {V_max} V",
-        f"Hold at {V_max}V until C/20",
-        "Rest for 1 hours",
-        )
+        # 0.5C top up 
+        f"Charge at 0.5C until {V_max} V",
+        f"Hold at {V_max}V until C/100",)
     ]
+
+    step_0p1C_CD = 5; # 1C discharge
+    step_0p1C_CC = 9; # 0.5C charge
+    step_0p1C_RE =6;     # Rest after 1C discharge
+    step_0p5C_CD = 0.1;  # Meaningless,choose to be 0.1C discharge following 1C discharge
 
     exp_RPT_Need_TopUp = [ (
         f"Charge at 0.3C until {V_max}V",
@@ -2347,27 +2350,46 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
         #"Rest for 10 s",   # add here to correct values of step_0p1C_CD
         #f"Hold at {V_max}V until C/100",
         #"Rest for 10 s", # Mark Ruihe change ad hoc setting for LFP 
-        f"Discharge at 0.5C until {V_max-0.2}V", # start from discharge as it is easier for unbalanced cells
-        f"Charge at 0.3C until {V_max}V",
-        f"Hold at {V_max}V until C/100",
-        "Rest for 1 hours", 
-        # 0.1C cycle 
-        f"Discharge at 0.1C until {V_min} V",  
-        "Rest for 3 hours",  
-        f"Charge at 0.1C until {V_max} V",
-        f"Hold at {V_max}V until C/100",
+
+        # Ruihe's old break-in
+        # f"Discharge at 0.5C until {V_max-0.2}V", # start from discharge as it is easier for unbalanced cells
+        # f"Charge at 0.3C until {V_max}V",
+        # f"Hold at {V_max}V until C/100",
+        # "Rest for 1 hours", 
+        # # 0.1C cycle 
+        # f"Discharge at 0.1C until {V_min} V",  
+        # "Rest for 3 hours",  
+        # f"Charge at 0.1C until {V_max} V",
+        # f"Hold at {V_max}V until C/100",
+        # "Rest for 1 hours",
+        # # 0.5C cycle 
+        # f"Discharge at 0.5C until {V_min} V",  
+        # "Rest for 3 hours",
+        # f"Charge at 0.5C until {V_max} V",
+        # f"Hold at {V_max}V until C/100",
+        # # Update 23-11-17: add one more 0.5C cycle to increase throughput capacity
+        # f"Discharge at 0.5C until {V_min} V",  
+        # "Rest for 3 hours",
+        # f"Charge at 0.5C until {V_max} V",
+        # f"Hold at {V_max}V until C/100",   
+        # "Rest for 3 hours",  
+
+        ## Here break-in is set as RPT, 241021
+        # 1/3C discharge cycle 
+        f"Discharge at C/3 until {V_min} V",  
+        "Rest for 1 hours",  
+        f"Charge at C/3 until {V_max} V",
+        f"Hold at {V_max}V until C/20",
         "Rest for 1 hours",
-        # 0.5C cycle 
-        f"Discharge at 0.5C until {V_min} V",  
-        "Rest for 3 hours",
+        # 1C discharge capacity 
+        f"Discharge at 1C until {V_min} V",  
+        "Rest for 1 hours",
+        f"Discharge at 0.1C until {V_min} V",
+        "Rest for 1 hours",
+    
+        # 0.5C top up 
         f"Charge at 0.5C until {V_max} V",
         f"Hold at {V_max}V until C/100",
-        # Update 23-11-17: add one more 0.5C cycle to increase throughput capacity
-        f"Discharge at 0.5C until {V_min} V",  
-        "Rest for 3 hours",
-        f"Charge at 0.5C until {V_max} V",
-        f"Hold at {V_max}V until C/100",   
-        "Rest for 3 hours",  
         ) ] 
     exp_RPT_GITT_text = [ (
         "Rest for 5 minutes (1 minute period)",  
@@ -2406,15 +2428,23 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
             "Rest for 1 hours", 
             ) ] 
         exp_RPT_text = exp_RPT_No_TopUp 
+
+    elif index_exp ==10: ## Warick 241021
+        exp_adjust_before_age = [ (
+            # just a place holder for now TODO 
+            "Rest for 1 hours", 
+            ) ] 
+        exp_RPT_text = exp_RPT_Warwick 
+
     else:
         exp_adjust_before_age = [ (
             # just a place holder for now TODO 
             "Rest for 1 hours", 
             ) ] 
         exp_RPT_text = exp_RPT_No_TopUp 
-    # step index for RPT
-    step_0p1C_CD = 4; step_0p1C_CC = 6;   step_0p1C_RE =5;    
-    step_0p5C_CD = 9;  
+    # step index for RPT # revised Xinlei 241021 to match new RPT
+    # step_0p1C_CD = 4; step_0p1C_CC = 6;   step_0p1C_RE =5;    
+    # step_0p5C_CD = 9;  
     Pack_return = [
         exp_AGE_text, step_AGE_CD, step_AGE_CC, step_AGE_CV,
         exp_breakin_text, exp_RPT_text, exp_RPT_GITT_text, 
@@ -2615,9 +2645,9 @@ def Get_Output_Keys(Para_dict_i):
         "Discharge capacity [A.h]",
         "Throughput capacity [A.h]",
         "CDend Total lithium capacity in particles [A.h]",
-        "CDend Loss of capacity to lithium plating [A.h]",
-        "CDend Loss of capacity to SEI [A.h]",
-        "CDend Loss of capacity to SEI on cracks [A.h]",
+        "CDend Loss of capacity to negative lithium plating [A.h]", ## revised negative 241021
+        "CDend Loss of capacity to negative SEI [A.h]",## revised negative
+        "CDend Loss of capacity to negative SEI on cracks [A.h]",## revised negative
         #"CDend X-averaged total SEI on cracks thickness [m]",
         #"CDend X-averaged negative electrode roughness ratio",
         "CDend Local ECM resistance [Ohm]",
@@ -2643,7 +2673,7 @@ def Get_Output_Keys(Para_dict_i):
         "CCend Negative electrode reaction overpotential [V]",
         "CCend Negative particle surface concentration [mol.m-3]",
         "CCend Negative electrode surface potential difference [V]",
-        "CCend SEI film overpotential [V]",
+        "CCend Negative electrode SEI film overpotential [V]", ## revised negative 241021
         #"CCend Negative electrode roughness ratio",
         #"CCend Total SEI on cracks thickness [m]",
 
@@ -2656,7 +2686,7 @@ def Get_Output_Keys(Para_dict_i):
         #"CDend Negative electrode roughness ratio",
         #"CDend Total SEI on cracks thickness [m]",
         "CDend Negative electrode surface potential difference [V]",
-        "CDend SEI film overpotential [V]",
+        "CDend Negative electrode SEI film overpotential [V]",
         "CDend Electrolyte diffusivity [m2.s-1]",
         "CDend Electrolyte conductivity [S.m-1]",
     ]
@@ -3015,18 +3045,20 @@ def Run_P2_Excel(
         my_dict_RPT = GetSol_dict (my_dict_RPT,keys_all_RPT, Sol_0, 
             0, step_0p1C_CD, step_0p1C_CC,step_0p1C_RE , step_AGE_CV   )
         # update 230517 - Get R from C/2 discharge only, discard GITT
-        cap_full = 5; 
-        if R_from_GITT: 
-            Res_midSOC,Res_full,SOC_Res = Get_0p1s_R0(Sol_0,Cyc_Index_Res,cap_full)
-        else: 
-            step_0P5C_CD = Sol_0.cycles[0].steps[step_0p5C_CD]
-            Res_midSOC,Res_full,SOC_Res = Get_R_from_0P5C_CD(step_0P5C_CD,cap_full)
-        my_dict_RPT["SOC_Res"].append(SOC_Res)
-        my_dict_RPT["Res_full"].append(Res_full)
-        my_dict_RPT["Res_midSOC"].append(Res_midSOC)    
+
+        # cap_full = 5; 
+        # if R_from_GITT: 
+        #     Res_midSOC,Res_full,SOC_Res = Get_0p1s_R0(Sol_0,Cyc_Index_Res,cap_full)
+        # else: 
+        #     step_0P5C_CD = Sol_0.cycles[0].steps[step_0p5C_CD]
+        #     Res_midSOC,Res_full,SOC_Res = Get_R_from_0P5C_CD(step_0P5C_CD,cap_full)
+        # my_dict_RPT["SOC_Res"].append(SOC_Res)
+        # my_dict_RPT["Res_full"].append(Res_full)
+        # my_dict_RPT["Res_midSOC"].append(Res_midSOC)    
 
         my_dict_RPT["avg_Age_T"].append(Temper_i-273.15)  # Update add 230617              
-        del SOC_Res,Res_full,Res_midSOC
+        #del SOC_Res,Res_full,Res_midSOC
+
         cycle_count =0
         my_dict_RPT["Cycle_RPT"].append(cycle_count)
         Cyc_Update_Index.append(cycle_count)
