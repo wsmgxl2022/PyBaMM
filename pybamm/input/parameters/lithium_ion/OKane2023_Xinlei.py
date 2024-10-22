@@ -1560,7 +1560,8 @@ def get_parameter_values():
         "Negative electrode number of cracks per unit area [m-2]": 3180000000000000.0,
         "Negative electrode Paris' law constant b": 1.12,
         "Negative electrode Paris' law constant m": 2.2,
-        "Negative electrode cracking rate": graphite_cracking_rate_Ai2020,
+        #"Negative electrode cracking rate": graphite_cracking_rate_Ai2020,
+        "Negative electrode cracking rate": 3.9e-20, # Revised 241022 to reduce LAM, 3.9e-20 old
         "Negative electrode LAM constant proportional term [s-1]": 2.7778e-07,
         "Negative electrode LAM constant exponential term": 2.0,
         "Negative electrode critical stress [Pa]": 60000000.0,
@@ -1613,7 +1614,8 @@ def get_parameter_values():
         "Positive electrode number of cracks per unit area [m-2]": 3180000000000000.0,
         "Positive electrode Paris' law constant b": 1.12,
         "Positive electrode Paris' law constant m": 2.2,
-        "Positive electrode cracking rate": cracking_rate_Ai2020,
+        #"Positive electrode cracking rate": cracking_rate_Ai2020,
+        "Positive electrode cracking rate": 3.9e-20, # revised 241022, 3.9e-20 old
         "Positive electrode LAM constant proportional term [s-1]": 2.7778e-07,
         "Positive electrode LAM constant exponential term": 2.0,
         #"Positive electrode critical stress [Pa]": 375000000.0,# original

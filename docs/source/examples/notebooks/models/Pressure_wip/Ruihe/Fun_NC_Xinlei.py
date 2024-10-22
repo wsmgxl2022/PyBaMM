@@ -292,19 +292,26 @@ def Cal_new_con_Update(Sol,Para):   # subscript r means the reservoir
     c_EC_JR_old =Para["Bulk solvent concentration [mol.m-3]"]  # Be careful when multiplying with pore volume to get amount in mole. Because of electrolyte dry out, that will give more amount than real.   
     # LLI due to electrode,Ratio of EC and lithium is 1:1 -> EC amount consumed is LLINegSEI[-1]
     LLINegSEI = (
-        Sol["Loss of lithium to SEI [mol]"].entries[-1] 
-        - Sol["Loss of lithium to SEI [mol]"].entries[0] )
+        Sol["Loss of lithium to negative SEI [mol]"].entries[-1] ## revised 241022
+        - Sol["Loss of lithium to negative SEI [mol]"].entries[0] )## revised 241022
     LLINegSEIcr = (
-        Sol["Loss of lithium to SEI on cracks [mol]"].entries[-1]
+        Sol["Loss of lithium to negative SEI on cracks [mol]"].entries[-1]  ## revised 241022
         - 
-        Sol["Loss of lithium to SEI on cracks [mol]"].entries[0]
+        Sol["Loss of lithium to negative SEI on cracks [mol]"].entries[0]  ## revised 241022
         )
-    LLINegDeadLiP = (
-        Sol["Loss of lithium to dead lithium plating [mol]"].entries[-1] 
-        - Sol["Loss of lithium to dead lithium plating [mol]"].entries[0])
+
+    ## Current version does not have that 241021,changed to nly LLINegLiP
+
     LLINegLiP = (
-        Sol["Loss of lithium to lithium plating [mol]"].entries[-1] 
-        - Sol["Loss of lithium to lithium plating [mol]"].entries[0])
+        Sol["Loss of lithium to negative lithium plating [mol]"].entries[-1] 
+        - Sol["Loss of lithium to negative lithium plating [mol]"].entries[0])
+    
+    # LLINegDeadLiP = (
+    #     Sol["Loss of lithium to dead negative lithium plating [mol]"].entries[-1] 
+    #     - Sol["Loss of lithium to dead negative lithium plating [mol]"].entries[0])
+    # LLINegLiP = (
+    #     Sol["Loss of lithium to negative lithium plating [mol]"].entries[-1] 
+    #     - Sol["Loss of lithium to negative lithium plating [mol]"].entries[0])
     cLi_Xavg  = Sol["X-averaged electrolyte concentration [mol.m-3]"].entries[-1] 
     # Pore volume change with time:
     PoreVolNeg_0 = Sol["X-averaged negative electrode porosity"].entries[0]*L_n*L_y*L_z;
@@ -331,7 +338,12 @@ def Cal_new_con_Update(Sol,Para):   # subscript r means the reservoir
     VmolEC    = Para["EC partial molar volume [m3.mol-1]"]
     #################   KEY EQUATION FOR DRY-OUT MODEL                   #################
     # UPDATE 230525: assume the formation of dead lithium doesn’t consumed EC
-    Vol_EC_consumed  =  ( LLINegSEI + LLINegSEIcr   ) * 1 * VmolEC    # Mark: either with 2 or not, will decide how fast electrolyte being consumed!
+    # Mark: either with 2 or not, will decide how fast electrolyte being consumed!
+    # Increase that to increase dry-out
+    Vol_EC_consumed  =  ( LLINegSEI + LLINegSEIcr   ) * 2 * VmolEC    
+   
+
+    
     Vol_Elely_need   = Vol_EC_consumed - Vol_Pore_decrease
     Vol_SEILiP_increase = 0.5*(
         (LLINegSEI+LLINegSEIcr) * VmolSEI 
@@ -1073,8 +1085,8 @@ def Get_SOH_LLI_LAM(my_dict_RPT,model_options,DryOut,mdic_dry,cap_0):
     if model_options.__contains__("SEI"):
         my_dict_RPT["CDend LLI SEI [%]"] = ((
             np.array(
-                my_dict_RPT["CDend Loss of capacity to SEI [A.h]"]-
-                my_dict_RPT["CDend Loss of capacity to SEI [A.h]"][0]
+                my_dict_RPT["CDend Loss of capacity to negative SEI [A.h]"]-
+                my_dict_RPT["CDend Loss of capacity to negative SEI [A.h]"][0]
                 )
             /my_dict_RPT["CDend Total lithium capacity in particles [A.h]"][0])*100).tolist()
     else:
@@ -1085,8 +1097,8 @@ def Get_SOH_LLI_LAM(my_dict_RPT,model_options,DryOut,mdic_dry,cap_0):
     if model_options.__contains__("SEI on cracks"):
         my_dict_RPT["CDend LLI SEI on cracks [%]"] = ((
             np.array(
-                my_dict_RPT["CDend Loss of capacity to SEI on cracks [A.h]"]-
-                my_dict_RPT["CDend Loss of capacity to SEI on cracks [A.h]"][0]
+                my_dict_RPT["CDend Loss of capacity to negative SEI on cracks [A.h]"]-
+                my_dict_RPT["CDend Loss of capacity to negative SEI on cracks [A.h]"][0]
                 )
             /my_dict_RPT["CDend Total lithium capacity in particles [A.h]"][0])*100).tolist()
     else:
@@ -1097,8 +1109,8 @@ def Get_SOH_LLI_LAM(my_dict_RPT,model_options,DryOut,mdic_dry,cap_0):
     if model_options.__contains__("lithium plating"):
         my_dict_RPT["CDend LLI lithium plating [%]"] = ((
             np.array(
-                my_dict_RPT["CDend Loss of capacity to lithium plating [A.h]"]-
-                my_dict_RPT["CDend Loss of capacity to lithium plating [A.h]"][0]
+                my_dict_RPT["CDend Loss of capacity to negative lithium plating [A.h]"]-
+                my_dict_RPT["CDend Loss of capacity to negative lithium plating [A.h]"][0]
                 )
             /my_dict_RPT["CDend Total lithium capacity in particles [A.h]"][0])*100).tolist()
     else:
@@ -1499,9 +1511,9 @@ def Plot_Cyc_RPT_4(
     axs[1,0].plot(
         my_dict_RPT["Throughput capacity [kA.h]"], 
         my_dict_RPT["CDend LAM_pe [%]"],     '-o',  ) 
-    axs[1,1].plot(
-        my_dict_RPT["Throughput capacity [kA.h]"], 
-        np.array(my_dict_RPT["Res_midSOC"]),     '-o', ) 
+    # axs[1,1].plot(
+    #     my_dict_RPT["Throughput capacity [kA.h]"], 
+    #     np.array(my_dict_RPT["Res_midSOC"]),     '-o', ) 
     axs[1,2].plot(
         my_dict_RPT["Throughput capacity [kA.h]"][1:], 
         np.array(my_dict_RPT["avg_Age_T"][1:]),     '-o', ) 
@@ -1533,16 +1545,18 @@ def Plot_Cyc_RPT_4(
                 color=color_exp,marker=marker_exp,)
             # update 230312- plot resistance here
             # Exp_1_AllData["A"]["Extract Data"]["0.1s Resistance (Ohms)"]
-            index_Res = df[df['0.1s Resistance (Ohms)'].le(10)].index
-            axs[1,1].plot(
-                #df["Days of degradation"][index_Res],
-                np.array(df["Charge Throughput (A.h)"][index_Res])/1e3,
-                np.array(df["0.1s Resistance (Ohms)"][index_Res])*1e3,
-                color=color_exp,marker=marker_exp)
-            axs[1,2].plot(
-                chThr_temp[1:],
-                np.array(df["Age set average temperature (degC)"][1:]).astype(float),
-                color=color_exp,marker=marker_exp,)
+
+            # index_Res = df[df['0.1s Resistance (Ohms)'].le(10)].index
+            # axs[1,1].plot(
+            #     #df["Days of degradation"][index_Res],
+            #     np.array(df["Charge Throughput (A.h)"][index_Res])/1e3,
+            #     np.array(df["0.1s Resistance (Ohms)"][index_Res])*1e3,
+            #     color=color_exp,marker=marker_exp)
+            # axs[1,2].plot(
+            #     chThr_temp[1:],
+            #     np.array(df["Age set average temperature (degC)"][1:]).astype(float),
+            #     color=color_exp,marker=marker_exp,)
+
         # Update 230518: Plot Experiment Average - at 1 expeirment and 1 temperature
         [X_1_st,X_5_st,Y_1_st_avg,Y_2_st_avg,
             Y_3_st_avg,Y_4_st_avg,Y_5_st_avg,Y_6_st_avg]  = XY_pack
@@ -1655,27 +1669,28 @@ def Plot_Cyc_RPT_4(
     plt.savefig(BasicPath + Target+"Plots/"+
         f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC SOC_RPT_dis.png", dpi=dpi) 
     plt.close()  # close the figure to save RAM
+
     # update 230518: plot resistance in C/2 discharge:
-    N_RPT = len(my_dict_RPT["Res_full"])
-    colormap_i = mpl.cm.get_cmap("gray", 14) 
-    fig, axs = plt.subplots(figsize=(4,3.2),tight_layout=True)
-    for i in range(N_RPT):
-        axs.plot(
-            my_dict_RPT["SOC_Res"][i], my_dict_RPT["Res_full"][i] ,
-            color=colormap_i(i),marker="o",  label=f"RPT {i}" )
-    if R_from_GITT: 
-        axs.set_xlabel("SOC-GITT %",   fontdict={'family':'DejaVu Sans','size':fs})
-        axs.set_ylabel(r'Res GITT (m$\Omega$)',   fontdict={'family':'DejaVu Sans','size':fs})
-        # axs.legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
-        axs.set_title("Res during GITT Dis",   fontdict={'family':'DejaVu Sans','size':fs+1})
-    else:
-        axs.set_xlabel("SOC-C/2 %",   fontdict={'family':'DejaVu Sans','size':fs})
-        axs.set_ylabel(r'Res C/2 (m$\Omega$)',   fontdict={'family':'DejaVu Sans','size':fs})
-        # axs.legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
-        axs.set_title("Res during C/2 Dis",   fontdict={'family':'DejaVu Sans','size':fs+1})
-    plt.savefig(BasicPath + Target+ "Plots/"+
-        f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC Res_full.png", dpi=dpi) 
-    plt.close()  # close the figure to save RAM
+    # N_RPT = len(my_dict_RPT["Res_full"])
+    # colormap_i = mpl.cm.get_cmap("gray", 14) 
+    # fig, axs = plt.subplots(figsize=(4,3.2),tight_layout=True)
+    # for i in range(N_RPT):
+    #     axs.plot(
+    #         my_dict_RPT["SOC_Res"][i], my_dict_RPT["Res_full"][i] ,
+    #         color=colormap_i(i),marker="o",  label=f"RPT {i}" )
+    # if R_from_GITT: 
+    #     axs.set_xlabel("SOC-GITT %",   fontdict={'family':'DejaVu Sans','size':fs})
+    #     axs.set_ylabel(r'Res GITT (m$\Omega$)',   fontdict={'family':'DejaVu Sans','size':fs})
+    #     # axs.legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
+    #     axs.set_title("Res during GITT Dis",   fontdict={'family':'DejaVu Sans','size':fs+1})
+    # else:
+    #     axs.set_xlabel("SOC-C/2 %",   fontdict={'family':'DejaVu Sans','size':fs})
+    #     axs.set_ylabel(r'Res C/2 (m$\Omega$)',   fontdict={'family':'DejaVu Sans','size':fs})
+    #     # axs.legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
+    #     axs.set_title("Res during C/2 Dis",   fontdict={'family':'DejaVu Sans','size':fs+1})
+    # plt.savefig(BasicPath + Target+ "Plots/"+
+    #     f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC Res_full.png", dpi=dpi) 
+    # plt.close()  # close the figure to save RAM
 
     return
 
@@ -1732,38 +1747,84 @@ def Plot_DMA_Dec(my_dict_RPT,Scan_i,Re_No,Temper_i,
     "CC Anode potential [V]",    # self defined
     "CC Cathode potential [V]",  # self defined """
 
+# def Plot_HalfCell_V(
+#         my_dict_RPT,my_dict_AGE,Scan_i,Re_No,index_exp,colormap,
+#         Temper_i,model_options,BasicPath, Target,fs,dpi):
+#     #~~~~~~~~~~~~~~~~~ plot RPT 
+#     def inFun_Plot(my_dict,str_jj):
+#         fig, axs = plt.subplots(3,2, figsize=(12,10),tight_layout=True)
+#         Str_Front= ["CD ","CC ",]
+#         Str_Back = ["Cathode potential [V]","Terminal voltage [V]","Anode potential [V]",]
+#         for j in range(2): 
+#             for i in range(3):
+#                 Time = my_dict[Str_Front[j]+"Time [h]"]
+#                 Num_Lines = len(Time)
+#                 cmap = mpl.cm.get_cmap(colormap, Num_Lines) # cmap(i)
+#                 for k in range(Num_Lines):
+#                     Y = my_dict[Str_Front[j]+Str_Back[i]] [k]
+#                     axs[i,j].plot( Time[k] , Y, color = cmap(k)   )
+#                 if j == 0 :
+#                     axs[i,j].set_ylabel(
+#                         Str_Back[i],   fontdict={'family':'DejaVu Sans','size':fs})
+#             axs[2,j].set_xlabel("Time [h]",   fontdict={'family':'DejaVu Sans','size':fs})
+#         axs[0,0].set_title("During Discharge",   fontdict={'family':'DejaVu Sans','size':fs+1})
+#         axs[0,1].set_title("During Charge",   fontdict={'family':'DejaVu Sans','size':fs+1})
+#         fig.suptitle(
+#             f"Scan {str(Scan_i)}-Exp-{index_exp}-{str(int(Temper_i-273.15))}"
+#             +r"$^\circ$C"+f" - Half cell Potential ({str_jj})", fontsize=fs+2)
+#         plt.savefig(BasicPath + Target+"Plots/" +
+#             f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC"
+#             f" Half cell Potential ({str_jj}).png", dpi=dpi) 
+#         plt.close() 
+#     inFun_Plot(my_dict_RPT,"RPT")
+#     inFun_Plot(my_dict_AGE,"AGE")
+#     return 
+
+# refined 241021
 def Plot_HalfCell_V(
-        my_dict_RPT,my_dict_AGE,Scan_i,Re_No,index_exp,colormap,
-        Temper_i,model_options,BasicPath, Target,fs,dpi):
+        my_dict_RPT, my_dict_AGE, Scan_i, Re_No, index_exp, colormap,
+        Temper_i, model_options, BasicPath, Target, fs, dpi):
     #~~~~~~~~~~~~~~~~~ plot RPT 
-    def inFun_Plot(my_dict,str_jj):
-        fig, axs = plt.subplots(3,2, figsize=(12,10),tight_layout=True)
-        Str_Front= ["CD ","CC ",]
-        Str_Back = ["Cathode potential [V]","Terminal voltage [V]","Anode potential [V]",]
+    def inFun_Plot(my_dict, str_jj):
+        fig, axs = plt.subplots(3, 2, figsize=(12, 10), tight_layout=True)
+        Str_Front = ["CD ", "CC "]
+        Str_Back = ["Cathode potential [V]", "Terminal voltage [V]", "Anode potential [V]"]
+        
         for j in range(2): 
             for i in range(3):
-                Time = my_dict[Str_Front[j]+"Time [h]"]
+                Time = my_dict[Str_Front[j] + "Time [h]"]
                 Num_Lines = len(Time)
-                cmap = mpl.cm.get_cmap(colormap, Num_Lines) # cmap(i)
+                
+                # 使用 plt.get_cmap 获取颜色映射
+                cmap = plt.get_cmap(colormap)  # 移除 Num_Lines 参数
+                
                 for k in range(Num_Lines):
-                    Y = my_dict[Str_Front[j]+Str_Back[i]] [k]
-                    axs[i,j].plot( Time[k] , Y, color = cmap(k)   )
-                if j == 0 :
-                    axs[i,j].set_ylabel(
-                        Str_Back[i],   fontdict={'family':'DejaVu Sans','size':fs})
-            axs[2,j].set_xlabel("Time [h]",   fontdict={'family':'DejaVu Sans','size':fs})
-        axs[0,0].set_title("During Discharge",   fontdict={'family':'DejaVu Sans','size':fs+1})
-        axs[0,1].set_title("During Charge",   fontdict={'family':'DejaVu Sans','size':fs+1})
+                    Y = my_dict[Str_Front[j] + Str_Back[i]][k]
+                    # 使用颜色映射为每条线赋颜色
+                    axs[i, j].plot(Time[k], Y, color=cmap(k / Num_Lines))  # 使用归一化的 k 值
+                    
+                if j == 0:
+                    axs[i, j].set_ylabel(Str_Back[i], fontdict={'family':'DejaVu Sans', 'size':fs})
+                    
+            axs[2, j].set_xlabel("Time [h]", fontdict={'family':'DejaVu Sans', 'size':fs})
+        
+        axs[0, 0].set_title("During Discharge", fontdict={'family':'DejaVu Sans', 'size':fs+1})
+        axs[0, 1].set_title("During Charge", fontdict={'family':'DejaVu Sans', 'size':fs+1})
+        
         fig.suptitle(
             f"Scan {str(Scan_i)}-Exp-{index_exp}-{str(int(Temper_i-273.15))}"
-            +r"$^\circ$C"+f" - Half cell Potential ({str_jj})", fontsize=fs+2)
-        plt.savefig(BasicPath + Target+"Plots/" +
-            f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC"
-            f" Half cell Potential ({str_jj}).png", dpi=dpi) 
-        plt.close() 
-    inFun_Plot(my_dict_RPT,"RPT")
-    inFun_Plot(my_dict_AGE,"AGE")
-    return 
+            + r"$^\circ$C" + f" - Half cell Potential ({str_jj})", fontsize=fs+2)
+        
+        # 保存图片
+        plt.savefig(BasicPath + Target + "Plots/" +
+                    f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i - 273.15))}degC"
+                    f" Half cell Potential ({str_jj}).png", dpi=dpi)
+        plt.close()
+
+    # 绘制 RPT 和 AGE
+    inFun_Plot(my_dict_RPT, "RPT")
+    inFun_Plot(my_dict_AGE, "AGE")
+
 
 
 
@@ -2286,18 +2347,20 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
         # 1C discharge capacity 
         f"Discharge at 1C until {V_min} V",  
         "Rest for 1 hours",
-        f"Discharge at 0.1C until {V_min} V",
+        f"Charge at 1C until {V_max} V",
+        f"Hold at {V_max}V until C/100",
         "Rest for 1 hours",
-    
-        # 0.5C top up 
-        f"Charge at 0.5C until {V_max} V",
-        f"Hold at {V_max}V until C/100",)
+
+        # # 0.5C top up 
+        # f"Charge at 0.5C until {V_max} V",
+        # f"Hold at {V_max}V until C/100",
+        )
     ]
 
     step_0p1C_CD = 5; # 1C discharge
-    step_0p1C_CC = 9; # 0.5C charge
+    step_0p1C_CC = 7; # 1C charge
     step_0p1C_RE =6;     # Rest after 1C discharge
-    step_0p5C_CD = 0.1;  # Meaningless,choose to be 0.1C discharge following 1C discharge
+    step_0p5C_CD = 5;  # Meaningless,choose to be 0.1C discharge following 1C discharge
 
     exp_RPT_Need_TopUp = [ (
         f"Charge at 0.3C until {V_max}V",
@@ -2375,6 +2438,7 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
         # "Rest for 3 hours",  
 
         ## Here break-in is set as RPT, 241021
+    
         # 1/3C discharge cycle 
         f"Discharge at C/3 until {V_min} V",  
         "Rest for 1 hours",  
@@ -2384,12 +2448,13 @@ def Initialize_exp_text( index_exp, V_max, V_min, Add_Rest):
         # 1C discharge capacity 
         f"Discharge at 1C until {V_min} V",  
         "Rest for 1 hours",
-        f"Discharge at 0.1C until {V_min} V",
-        "Rest for 1 hours",
-    
-        # 0.5C top up 
-        f"Charge at 0.5C until {V_max} V",
+        f"Charge at 1C until {V_max} V",
         f"Hold at {V_max}V until C/100",
+        "Rest for 1 hours",
+
+        # # 0.5C top up 
+        # f"Charge at 0.5C until {V_max} V",
+        # f"Hold at {V_max}V until C/100",
         ) ] 
     exp_RPT_GITT_text = [ (
         "Rest for 5 minutes (1 minute period)",  
@@ -2476,7 +2541,7 @@ def Get_tot_cyc(Runshort,index_exp,Temp_K,Scan_i):
     # Xinlei add 100 cycles    
     elif Runshort == "War":
         if index_exp == 10:
-            tot_cyc = 100; cyc_age = 20; update = 20;
+            tot_cyc = 10; cyc_age = 10; update = 10; ## Changed 241021
     elif Runshort == "Reservoir":
         pass
 
@@ -3256,15 +3321,17 @@ def Run_P2_Excel(
                 
                 # update 230517 - Get R from C/2 discharge only, discard GITT
                 cap_full = Paraupdate["Nominal cell capacity [A.h]"] # 5
-                if R_from_GITT: 
-                    Res_midSOC,Res_full,SOC_Res = Get_0p1s_R0(Sol_Dry_i,Cyc_Index_Res,cap_full)
-                else: 
-                    step_0P5C_CD = Sol_Dry_i.cycles[0].steps[step_0p5C_CD]
-                    Res_midSOC,Res_full,SOC_Res = Get_R_from_0P5C_CD(step_0P5C_CD,cap_full)
-                my_dict_RPT["SOC_Res"].append(SOC_Res)
-                my_dict_RPT["Res_full"].append(Res_full)
-                my_dict_RPT["Res_midSOC"].append(Res_midSOC)             
-                del SOC_Res,Res_full,Res_midSOC
+
+                # if R_from_GITT: 
+                #     Res_midSOC,Res_full,SOC_Res = Get_0p1s_R0(Sol_Dry_i,Cyc_Index_Res,cap_full)
+                # else: 
+                #     step_0P5C_CD = Sol_Dry_i.cycles[0].steps[step_0p5C_CD]
+                #     Res_midSOC,Res_full,SOC_Res = Get_R_from_0P5C_CD(step_0P5C_CD,cap_full)
+                # my_dict_RPT["SOC_Res"].append(SOC_Res)
+                # my_dict_RPT["Res_full"].append(Res_full)
+                # my_dict_RPT["Res_midSOC"].append(Res_midSOC)             
+                # del SOC_Res,Res_full,Res_midSOC
+
                 if DryOut == "On":
                     mdic_dry = Update_mdic_dry(Data_Pack,mdic_dry)
                 Para_0_Dry_old = Paraupdate;    Model_Dry_old = Model_Dry_i  ;     Sol_Dry_old = Sol_Dry_i    ;   
