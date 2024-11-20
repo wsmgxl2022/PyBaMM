@@ -1436,6 +1436,9 @@ def get_parameter_values():
         "Negative lithium interstitial reference concentration [mol.m-3]": 15.0,
         "Negative initial inner SEI thickness [m]": 1.23625e-08,
         "Negative initial outer SEI thickness [m]": 1.23625e-08,
+        # "Negative initial inner SEI thickness [m]": 1e-09, ## increased  
+        # "Negative initial outer SEI thickness [m]": 1e-09, ## increased 
+
 
         "Negative EC initial concentration in electrolyte [mol.m-3]": 4541.0,
         "Negative EC diffusivity [m2.s-1]": 2e-18,
@@ -1477,17 +1480,25 @@ def get_parameter_values():
         "Outer SEI partial molar volume [m3.mol-1]": 9.585e-05,
         "SEI reaction exchange current density [A.m-2]": 1.5e-07,
         "SEI resistivity [Ohm.m]": 200000.0,
+
         "Outer SEI solvent diffusivity [m2.s-1]": 2.5000000000000002e-22,
+
         "Bulk solvent concentration [mol.m-3]": 2636.0,
         "Inner SEI open-circuit potential [V]": 0.1,
         "Outer SEI open-circuit potential [V]": 0.8,
         "Inner SEI electron conductivity [S.m-1]": 8.95e-14,
+
         "Inner SEI lithium interstitial diffusivity [m2.s-1]": 1e-20,
         "Lithium interstitial reference concentration [mol.m-3]": 15.0,
+
+        # Dont know why interstial SEI model need no slipt parameters 
         "Initial inner SEI thickness [m]": 1.23625e-08, # updated by Xinlei 
         "Initial outer SEI thickness [m]": 1.23625e-08, # updated by Xinlei 
+
         "Initial inner SEI on cracks thickness [m]": 0,
         "Initial outer SEI on cracks thickness [m]": 5e-13,  # avoid division by zero
+        
+        
         "EC initial concentration in electrolyte [mol.m-3]": 4541.0,
         "EC diffusivity [m2.s-1]": 2e-18,
         "SEI kinetic rate constant [m.s-1]": 1e-12,

@@ -786,7 +786,8 @@ def Overwrite_Initial_L_SEI_0_Neg_Porosity(Para_0,cap_loss):
     # do this when finish updating
     F = 96485.3
     A = Para_0["Electrode width [m]"] * Para_0["Electrode height [m]"]
-    z_SEI = Para_0["Ratio of lithium moles to SEI moles"] 
+    #z_SEI = Para_0["Ratio of lithium moles to SEI moles"]  
+    z_SEI = Para_0["Negative ratio of lithium moles to SEI moles"]  # revised 241022
     L_neg = Para_0["Negative electrode thickness [m]"] 
     eps_act_neg = Para_0["Negative electrode active material volume fraction"]
     R_neg =   Para_0["Negative particle radius [m]"]
@@ -800,12 +801,20 @@ def Overwrite_Initial_L_SEI_0_Neg_Porosity(Para_0,cap_loss):
 
     delta_epi = (L_SEI_init ) * roughness * a_neg
     L_inner_init = L_SEI_init / 2
-    epi = 0.25 - delta_epi
-    # print(L_inner_init,epi)
+    epi = 0.25 - delta_epi 
+    
+    print(L_inner_init,epi)
     # important: update here!
+
     Para_0["Negative electrode porosity"] = epi
+    ## previous
     Para_0["Initial outer SEI thickness [m]"] = L_inner_init + 2.5e-9
     Para_0["Initial inner SEI thickness [m]"] = L_inner_init + 2.5e-9
+    # updated 241023 Xinlei with negative
+    Para_0["Negative initial outer SEI thickness [m]"] = L_inner_init + 2.5e-9
+    Para_0["Negative initial inner SEI thickness [m]"] = L_inner_init + 2.5e-9
+    # Para_0["Negative initial outer SEI thickness [m]"] = 4e-8
+    # Para_0["Negative initial inner SEI thickness [m]"] = 4e-8
     print(f"Has Overwritten Initial outer SEI thickness [m] to be {(L_inner_init+2.5e-9):.2e} and Negative electrode porosity to be {epi:.3f} to account for initial capacity loss of {cap_loss:.3f} Ah")
 
     return Para_0
@@ -963,7 +972,9 @@ def Para_init(Para_dict,cap_st):
 
 
 
-    cap_loss =   5.0 - 4.86491 # cap_st      # change for debug=   4.86491  
+    #cap_loss =   5.0 - 4.86491 # cap_st      # change for debug=   4.86491  
+    cap_loss =   5.0 - 4.86491 # revised 241022, Xinlei
+    #cap_loss = 0
     Para_0 = Overwrite_Initial_L_SEI_0_Neg_Porosity(Para_0,cap_loss)
 
 
@@ -1073,6 +1084,14 @@ def Get_SOH_LLI_LAM(my_dict_RPT,model_options,DryOut,mdic_dry,cap_0):
         /
         cap_0       # my_dict_RPT["Discharge capacity [A.h]"][0] # Mark: change to this so that every case has same standard for reservior paper
         )*100).tolist()
+    
+    # Xinlei added 1025
+    my_dict_RPT['CDend 1C SOH [%]'] = ((
+        np.array(my_dict_RPT["Discharge capacity [A.h]"])
+        /
+        4.68       # change to 1C discharge capacity
+        )*100).tolist()
+    
     my_dict_RPT["CDend LAM_ne [%]"] = ((1-
         np.array(my_dict_RPT['CDend Negative electrode capacity [A.h]'])
         /my_dict_RPT['CDend Negative electrode capacity [A.h]'][0])*100).tolist()
@@ -1202,11 +1221,6 @@ def Run_Breakin(
     while i_run_try<try_no:
         try:
 
-
-
-
-
-            
             Sim_0    = pb.Simulation(
                 Model_0,        experiment = Experiment_Breakin,
                 parameter_values = Para_0,
@@ -1511,6 +1525,10 @@ def Plot_Cyc_RPT_4(
     axs[1,0].plot(
         my_dict_RPT["Throughput capacity [kA.h]"], 
         my_dict_RPT["CDend LAM_pe [%]"],     '-o',  ) 
+    
+    axs[1,1].plot(
+        my_dict_RPT["Throughput capacity [kA.h]"], 
+        np.array(my_dict_RPT["CDend 1C SOH [%]"]),     '-o', ) 
     # axs[1,1].plot(
     #     my_dict_RPT["Throughput capacity [kA.h]"], 
     #     np.array(my_dict_RPT["Res_midSOC"]),     '-o', ) 
@@ -1582,7 +1600,8 @@ def Plot_Cyc_RPT_4(
     axs[0,1].set_ylabel("LLI %")
     axs[0,2].set_ylabel("LAM NE %")
     axs[1,0].set_ylabel("LAM PE %")
-    axs[1,1].set_ylabel(r"Lump resistance [m$\Omega$]")
+    #axs[1,1].set_ylabel(r"Lump resistance [m$\Omega$]")
+    axs[1,1].set_ylabel("1C SOH [%]")
     axs[1,2].set_ylabel(r"Avg age T [$^\circ$C]")
     axs[0,2].set_xlabel("Charge Throughput (kA.h)")
     axs[1,2].set_xlabel("Charge Throughput (kA.h)")
@@ -1668,6 +1687,235 @@ def Plot_Cyc_RPT_4(
     axs[1].set_title("Pos Sto. range (Dis)",   fontdict={'family':'DejaVu Sans','size':fs+1})
     plt.savefig(BasicPath + Target+"Plots/"+
         f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC SOC_RPT_dis.png", dpi=dpi) 
+    plt.close()  # close the figure to save RAM
+
+    # update 230518: plot resistance in C/2 discharge:
+    # N_RPT = len(my_dict_RPT["Res_full"])
+    # colormap_i = mpl.cm.get_cmap("gray", 14) 
+    # fig, axs = plt.subplots(figsize=(4,3.2),tight_layout=True)
+    # for i in range(N_RPT):
+    #     axs.plot(
+    #         my_dict_RPT["SOC_Res"][i], my_dict_RPT["Res_full"][i] ,
+    #         color=colormap_i(i),marker="o",  label=f"RPT {i}" )
+    # if R_from_GITT: 
+    #     axs.set_xlabel("SOC-GITT %",   fontdict={'family':'DejaVu Sans','size':fs})
+    #     axs.set_ylabel(r'Res GITT (m$\Omega$)',   fontdict={'family':'DejaVu Sans','size':fs})
+    #     # axs.legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
+    #     axs.set_title("Res during GITT Dis",   fontdict={'family':'DejaVu Sans','size':fs+1})
+    # else:
+    #     axs.set_xlabel("SOC-C/2 %",   fontdict={'family':'DejaVu Sans','size':fs})
+    #     axs.set_ylabel(r'Res C/2 (m$\Omega$)',   fontdict={'family':'DejaVu Sans','size':fs})
+    #     # axs.legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
+    #     axs.set_title("Res during C/2 Dis",   fontdict={'family':'DejaVu Sans','size':fs+1})
+    # plt.savefig(BasicPath + Target+ "Plots/"+
+    #     f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC Res_full.png", dpi=dpi) 
+    # plt.close()  # close the figure to save RAM
+
+    return
+
+def Plot_Cyc_RPT_5(
+        my_dict_RPT, Exp_Any_AllData,Temp_Cell_Exp,
+        XY_pack,index_exp, Plot_Exp, R_from_GITT,
+        Scan_i,Re_No,Temper_i,model_options,
+        BasicPath, Target,fs,dpi):
+    
+    Num_subplot = 5;
+    fig, axs = plt.subplots(2,3, figsize=(15,7.8),tight_layout=True)
+    axs[0,0].plot(
+        my_dict_RPT['Cycle_RPT'], 
+        my_dict_RPT['CDend SOH [%]'],     
+        '-o', label="Scan=" + str(Scan_i) )
+    axs[0,1].plot(
+        my_dict_RPT['Cycle_RPT'], 
+        my_dict_RPT["CDend LLI [%]"],'-o', label="total LLI")
+    if model_options.__contains__("lithium plating"):
+        axs[0,1].plot(
+            my_dict_RPT['Cycle_RPT'], 
+            my_dict_RPT["CDend LLI lithium plating [%]"],'--o', label="LiP")
+    if model_options.__contains__("SEI"):
+        axs[0,1].plot(
+            my_dict_RPT['Cycle_RPT'], 
+            my_dict_RPT["CDend LLI SEI [%]"] ,'--o', label="SEI")
+    if model_options.__contains__("SEI on cracks"):
+        axs[0,1].plot(
+            my_dict_RPT['Cycle_RPT'], 
+            my_dict_RPT["CDend LLI SEI on cracks [%]"] ,
+            '--o', label="SEI-on-cracks")
+    axs[0,2].plot(
+        my_dict_RPT['Cycle_RPT'], 
+        my_dict_RPT["CDend LAM_ne [%]"],     '-o', ) 
+    axs[1,0].plot(
+        my_dict_RPT['Cycle_RPT'], 
+        my_dict_RPT["CDend LAM_pe [%]"],     '-o',  ) 
+    
+
+    ## added exp data manually.Xinlei 241030
+    cycles_exp_C7 = [0, 20, 40, 60, 80, 100]
+    SOH_exp_C7 = [100,97.9707998307237,96.6165890816758,96.1933982225984,95.5543800253915,94.9471011426153]
+    axs[1,1].plot(
+        cycles_exp_C7, 
+        SOH_exp_C7,'--', ) 
+    axs[1,1].plot(
+        my_dict_RPT['Cycle_RPT'], 
+        np.array(my_dict_RPT["CDend 1C SOH [%]"]),     '-o', ) 
+    # axs[1,1].plot(
+    #     my_dict_RPT["Throughput capacity [kA.h]"], 
+    #     np.array(my_dict_RPT["Res_midSOC"]),     '-o', ) 
+    axs[1,2].plot(
+        my_dict_RPT['Cycle_RPT'][1:], 
+        np.array(my_dict_RPT["avg_Age_T"][1:]),     '-o', ) 
+    # Plot Charge Throughput (A.h) vs SOH
+    color_exp     = [0, 0, 0, 0.3]; marker_exp     = "v";
+    color_exp_Avg = [0, 0, 0, 0.7]; marker_exp_Avg = "s";
+    if index_exp in list(np.arange(1,6)) and int(Temper_i- 273.15) in [10,25,40]:
+        Exp_temp_i_cell = Temp_Cell_Exp[str(int(Temper_i- 273.15))]
+    else:
+        Exp_temp_i_cell = "nan"
+        Plot_Exp = False
+
+    if Plot_Exp == True:
+        for cell in Exp_temp_i_cell:
+            df = Exp_Any_AllData[cell]["Extract Data"]
+            chThr_temp = np.array(df["Charge Throughput (A.h)"])/1e3
+            df_DMA = Exp_Any_AllData[cell]["DMA"]["LLI_LAM"]
+            axs[0,0].plot(
+                chThr_temp,np.array(df_DMA["SoH"])*100,
+                color=color_exp,marker=marker_exp,label=f"Cell {cell}") 
+            axs[0,1].plot(
+                chThr_temp,np.array(df_DMA["LLI"])*100,
+                color=color_exp,marker=marker_exp,label=f"Cell {cell}")  
+            axs[0,2].plot(
+                chThr_temp,np.array(df_DMA["LAM NE_tot"])*100,
+                color=color_exp,marker=marker_exp, )
+            axs[1,0].plot(
+                chThr_temp,np.array(df_DMA["LAM PE"])*100,
+                color=color_exp,marker=marker_exp,)
+            # update 230312- plot resistance here
+            # Exp_1_AllData["A"]["Extract Data"]["0.1s Resistance (Ohms)"]
+
+            # index_Res = df[df['0.1s Resistance (Ohms)'].le(10)].index
+            # axs[1,1].plot(
+            #     #df["Days of degradation"][index_Res],
+            #     np.array(df["Charge Throughput (A.h)"][index_Res])/1e3,
+            #     np.array(df["0.1s Resistance (Ohms)"][index_Res])*1e3,
+            #     color=color_exp,marker=marker_exp)
+            # axs[1,2].plot(
+            #     chThr_temp[1:],
+            #     np.array(df["Age set average temperature (degC)"][1:]).astype(float),
+            #     color=color_exp,marker=marker_exp,)
+
+        # Update 230518: Plot Experiment Average - at 1 expeirment and 1 temperature
+        [X_1_st,X_5_st,Y_1_st_avg,Y_2_st_avg,
+            Y_3_st_avg,Y_4_st_avg,Y_5_st_avg,Y_6_st_avg]  = XY_pack
+        axs[0,0].plot(
+            X_1_st,Y_1_st_avg,color=color_exp_Avg,
+            marker=marker_exp_Avg,label=f"Exp-Avg") 
+        axs[0,1].plot(
+            X_1_st,Y_2_st_avg,color=color_exp_Avg,
+            marker=marker_exp_Avg,label=f"Exp-Avg")  
+        axs[0,2].plot(
+            X_1_st,Y_3_st_avg,color=color_exp_Avg,
+            marker=marker_exp_Avg, )
+        axs[1,0].plot(
+            X_1_st,Y_4_st_avg,
+            color=color_exp_Avg,marker=marker_exp_Avg,)
+        axs[1,1].plot(
+            X_5_st,Y_5_st_avg,
+            color=color_exp_Avg,marker=marker_exp_Avg)
+        axs[1,2].plot(
+            X_1_st[1:],Y_6_st_avg[1:],
+            color=color_exp_Avg,marker=marker_exp_Avg,)
+    axs[0,0].set_ylabel("SOH %")
+    axs[0,1].set_ylabel("LLI %")
+    axs[0,2].set_ylabel("LAM NE %")
+    axs[1,0].set_ylabel("LAM PE %")
+    #axs[1,1].set_ylabel(r"Lump resistance [m$\Omega$]")
+    axs[1,1].set_ylabel("1C SOH [%]")
+    axs[1,2].set_ylabel(r"Avg age T [$^\circ$C]")
+    axs[0,2].set_xlabel("Cycle number")
+    axs[1,2].set_xlabel("Cycle number")
+    axf = axs.flatten()
+    for i in range(0,6):
+        labels = axf[i].get_xticklabels() + axf[i].get_yticklabels(); 
+        [label.set_fontname('DejaVu Sans') for label in labels]
+        axf[i].tick_params(labelcolor='k', labelsize=fs, width=1);del labels
+    axs[1,1].ticklabel_format(style='sci', axis='x', scilimits=(-1e-2,1e-2))
+    axs[0,0].legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)
+    axs[0,1].legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)
+    fig.suptitle(
+        f"Scan_{Scan_i}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}"
+        +r"$^\circ$C - Summary", fontsize=fs+2)
+    plt.savefig(
+        BasicPath + Target+    "Plots/" +  
+        f"0_Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC Summary_cyclenumber.png", dpi=dpi)
+    plt.close()  # close the figure to save RAM
+
+    if model_options.__contains__("SEI on cracks"):
+        """ Num_subplot = 2;
+        fig, axs = plt.subplots(1,Num_subplot, figsize=(12,4.8),tight_layout=True)
+        axs[0].plot(my_dict_RPT['Throughput capacity [kA.h]'], my_dict_RPT["CDend X-averaged total SEI on cracks thickness [m]"],     '-o', label="Scan=" + str(Scan_i) )
+        axs[1].plot(my_dict_RPT['Throughput capacity [kA.h]'], my_dict_RPT["CDend X-averaged negative electrode roughness ratio"],'-o', label="Scan=" + str(Scan_i) )
+        axs[0].set_ylabel("SEI on cracks thickness [m]",   fontdict={'family':'DejaVu Sans','size':fs})
+        axs[1].set_ylabel("Roughness ratio",   fontdict={'family':'DejaVu Sans','size':fs})
+        for i in range(0,Num_subplot):
+            axs[i].set_xlabel("Charge Throughput (kA.h)",   fontdict={'family':'DejaVu Sans','size':fs})
+            labels = axs[i].get_xticklabels() + axs[i].get_yticklabels(); [label.set_fontname('DejaVu Sans') for label in labels]
+            axs[i].tick_params(labelcolor='k', labelsize=fs, width=1) ;  del labels;
+            axs[i].legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)
+        axs[0].set_title("X-avg tot Neg SEI on cracks thickness",   fontdict={'family':'DejaVu Sans','size':fs+1})
+        axs[1].set_title("X-avg Neg roughness ratio",   fontdict={'family':'DejaVu Sans','size':fs+1})
+        plt.savefig(BasicPath + Target+"Plots/" +
+            f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC - Cracks related_Scan.png", dpi=dpi)
+        plt.close()  # close the figure to save RAM """
+
+        Num_subplot = 2;
+        fig, axs = plt.subplots(1,Num_subplot, figsize=(12,4.8),tight_layout=True)
+        axs[0].plot(my_dict_RPT['Cycle_RPT'], 
+            my_dict_RPT["CDend Negative electrode capacity [A.h]"][0]
+            -
+            my_dict_RPT["CDend Negative electrode capacity [A.h]"],'-o',label="Neg Scan=" + str(Scan_i))
+        axs[1].plot(my_dict_RPT['Cycle_RPT'], 
+            my_dict_RPT["CDend Positive electrode capacity [A.h]"][0]
+            -
+            my_dict_RPT["CDend Positive electrode capacity [A.h]"],'-^',label="Pos Scan=" + str(Scan_i))
+        """ axs[0].plot(
+            my_dict_RPT['Throughput capacity [kA.h]'], 
+            my_dict_RPT["CDend X-averaged total SEI on cracks thickness [m]"],                  
+            '-o',label="Scan="+ str(Scan_i)) """
+        for i in range(0,2):
+            axs[i].set_xlabel("Cycle number",   fontdict={'family':'DejaVu Sans','size':fs})
+            labels = axs[i].get_xticklabels() + axs[i].get_yticklabels(); [label.set_fontname('DejaVu Sans') for label in labels]
+            axs[i].tick_params(labelcolor='k', labelsize=fs, width=1) ;  del labels;
+            axs[i].legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)
+        #axs[0].set_ylabel("SEI on cracks thickness [m]",   fontdict={'family':'DejaVu Sans','size':fs})
+        #axs[0].set_title("CDend X-avg tot SEI on cracks thickness",   fontdict={'family':'DejaVu Sans','size':fs+1})
+        for i in range(0,2):
+            axs[i].set_xlabel("Cycle number",   fontdict={'family':'DejaVu Sans','size':fs})
+            axs[i].set_ylabel("Capacity [A.h]",   fontdict={'family':'DejaVu Sans','size':fs})
+            labels = axs[i].get_xticklabels() + axs[i].get_yticklabels(); [label.set_fontname('DejaVu Sans') for label in labels]
+            axs[i].tick_params(labelcolor='k', labelsize=fs, width=1) ;  del labels;
+            axs[i].legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)
+            axs[i].set_title("LAM of Neg and Pos",   fontdict={'family':'DejaVu Sans','size':fs+1})
+        plt.savefig(BasicPath + Target+"Plots/" +
+            f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC LAM-IR_cyclenumber.png", dpi=dpi)
+        plt.close()  # close the figure to save RAM
+    Num_subplot = 2;
+    fig, axs = plt.subplots(1,Num_subplot, figsize=(8,3.2),tight_layout=True)
+    axs[0].plot(my_dict_RPT['Cycle_RPT'], my_dict_RPT["CDsta Positive electrode stoichiometry"] ,'-o',label="Start" )
+    axs[0].plot(my_dict_RPT['Cycle_RPT'], my_dict_RPT["CDend Positive electrode stoichiometry"] ,'-^',label="End" )
+    axs[1].plot(my_dict_RPT['Cycle_RPT'], my_dict_RPT["CDsta Negative electrode stoichiometry"],'-o',label="Start" )
+    axs[1].plot(my_dict_RPT['Cycle_RPT'], my_dict_RPT["CDend Negative electrode stoichiometry"],'-^',label="End" )
+    for i in range(0,2):
+        axs[i].set_xlabel("Cycle number",   fontdict={'family':'DejaVu Sans','size':fs})
+        axs[i].set_ylabel("Stoichiometry",   fontdict={'family':'DejaVu Sans','size':fs})
+        labels = axs[i].get_xticklabels() + axs[i].get_yticklabels(); [label.set_fontname('DejaVu Sans') for label in labels]
+        axs[i].ticklabel_format(style='sci', axis='x', scilimits=(-1e-2,1e-2))
+        axs[i].tick_params(labelcolor='k', labelsize=fs, width=1) ;  del labels;
+        axs[i].legend(prop={'family':'DejaVu Sans','size':fs-2},loc='best',frameon=False)     
+    axs[0].set_title("Neg Sto. range (Dis)",   fontdict={'family':'DejaVu Sans','size':fs+1})
+    axs[1].set_title("Pos Sto. range (Dis)",   fontdict={'family':'DejaVu Sans','size':fs+1})
+    plt.savefig(BasicPath + Target+"Plots/"+
+        f"Scan_{Scan_i}_Re_{Re_No}-Exp-{index_exp}-{str(int(Temper_i- 273.15))}degC SOC_RPT_dis_cyclenumber.png", dpi=dpi) 
     plt.close()  # close the figure to save RAM
 
     # update 230518: plot resistance in C/2 discharge:
@@ -2541,7 +2789,10 @@ def Get_tot_cyc(Runshort,index_exp,Temp_K,Scan_i):
     # Xinlei add 100 cycles    
     elif Runshort == "War":
         if index_exp == 10:
-            tot_cyc = 10; cyc_age = 10; update = 10; ## Changed 241021
+            tot_cyc = 100; cyc_age = 20; update = 20; ## Changed 241021
+    elif Runshort == "War_long":
+        if index_exp == 10:
+            tot_cyc = 500; cyc_age = 20; update = 20; ## Changed 241021
     elif Runshort == "Reservoir":
         pass
 
@@ -2807,6 +3058,9 @@ def Write_Dict_to_Excel(
         tot_char_throughput = my_dict_RPT['Throughput capacity [kA.h]'][-1]
         Dict_Excel["Throughput capacity [kA.h]"] =  tot_char_throughput
         Dict_Excel["CDend SOH [%]"] =  my_dict_RPT['CDend SOH [%]'][-1]
+        # Xinlei 241025
+        Dict_Excel["CDend 1C SOH [%]"] =  my_dict_RPT['CDend 1C SOH [%]'][-1]
+
         Porosity = my_dict_RPT["CDend Porosity"][-1]
         x_n = my_dict_RPT["x_n [m]"]
         Dict_Excel["CDend Neg Porosity Sep side"] =  Porosity[len(x_n)-1]
@@ -2833,6 +3087,9 @@ def Write_Dict_to_Excel(
         
         # per kAh:
         Dict_Excel["Cap per kAh"]=(1-Dict_Excel["CDend SOH [%]"])*cap_0/tot_char_throughput
+
+        Dict_Excel["1C Cap per kAh"]=(1-Dict_Excel["CDend 1C SOH [%]"])*4.68/tot_char_throughput
+
         Dict_Excel["LLI% per kAh"]=Dict_Excel["CDend LLI [%]"]/tot_char_throughput
         Dict_Excel["LAM_ne% per kAh"]=Dict_Excel["CDend LAM_ne_tot [%]"]/tot_char_throughput
         Dict_Excel["LAM_pe% per kAh"]=Dict_Excel["CDend LAM_pe_tot [%]"]/tot_char_throughput
@@ -2847,6 +3104,9 @@ def Write_Dict_to_Excel(
     else: # break in cycle fail:
         Keys_pos = [
             "Throughput capacity [kA.h]","CDend SOH [%]",
+            # Xinlei 241025
+            "CDend 1C SOH [%]",
+
             "CDend Neg Porosity Sep side",
             "CDend LLI [%]","LLI to sei-on-cracks [%]",
             "LLI to LiP [%]","LLI to SEI [%]",
@@ -3429,6 +3689,13 @@ def Run_P2_Excel(
             XY_pack,index_exp, Plot_Exp,   R_from_GITT,
             Scan_i,Re_No,Temper_i,model_options,
             BasicPath, Target,fs,dpi)
+        
+        Plot_Cyc_RPT_5(
+            my_dict_RPT, Exp_Any_AllData,Temp_Cell_Exp,
+            XY_pack,index_exp, Plot_Exp,   R_from_GITT,
+            Scan_i,Re_No,Temper_i,model_options,
+            BasicPath, Target,fs,dpi) # added Xinlei versus cycle number, cycle number list larger than other one, due to dry-out
+        
         Plot_DMA_Dec(my_dict_RPT,Scan_i,Re_No,Temper_i,model_options,
             BasicPath, Target,fs,dpi)
         if len(my_dict_AGE["CDend Porosity"])>1:
@@ -3471,14 +3738,23 @@ def Run_P2_Excel(
         Keys_cyc_mat =[
             'Throughput capacity [kA.h]',
             'CDend SOH [%]',
+            'CDend 1C SOH [%]', # Added Xinlei 241025
             "CDend LLI [%]",
             "CDend LAM_ne [%]",
             "CDend LAM_pe [%]",
-            "Res_midSOC",
+            #"Res_midSOC",
         ]
+        # 创建一个新字典，用于存储格式化后的键名
         my_dict_mat = {}
+
+        # 遍历 Keys_cyc_mat 中的每个键，格式化后添加到 my_dict_mat 中
         for key in Keys_cyc_mat:
-            my_dict_mat[key]=my_dict_RPT[key]
+            # 获取 [ 前面的部分，并去除空格
+            new_key = key.split('[')[0].replace(' ', '_')
+            my_dict_mat[new_key] = my_dict_RPT[key]  # 使用新键名将对应值添加到新字典中
+    
+    # 从 my_dict_RPT 中获取原始数据，并赋值给 my
+
         #########      3-2: Save data as .mat or .json
         my_dict_RPT["Cyc_Update_Index"] = Cyc_Update_Index
         my_dict_RPT["SaveTimes"]    = SaveTimes
