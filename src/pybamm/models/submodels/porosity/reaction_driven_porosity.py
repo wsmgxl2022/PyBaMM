@@ -55,9 +55,9 @@ class ReactionDriven(BaseModel):
                 # a_n * (L_tot + L_tot ** 2 / R_n + L_tot ** # 3 / (3 * R_n ** 2)))
                 # but it is not clear if it is relevant or not.
                 delta_eps_k = -a_k * L_tot
-
+            por_decay = 0.5 ## added 1123 to test
             domain_param = self.param.domain_params[domain.split()[0]]
-            eps_k = domain_param.epsilon_init + delta_eps_k
+            eps_k = domain_param.epsilon_init + delta_eps_k * por_decay
             eps_dict[domain] = eps_k
 
         variables = self._get_standard_porosity_variables(eps_dict)
