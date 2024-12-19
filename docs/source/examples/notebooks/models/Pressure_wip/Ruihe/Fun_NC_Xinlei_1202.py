@@ -546,7 +546,7 @@ def Run_Model_Base_On_Last_Solution(
                     submesh_types=submesh_types )
                 Sol_new = Simnew.solve(
                     calc_esoh=False,
-                    save_at_cycles = Update_Cycles, #Revised 1129 to add more cycles 
+                    #save_at_cycles = Update_Cycles, #Revised 1129 to add more cycles 
                     callbacks=Call_Age)
                 if Call_Age.success == False:
                     raise Experiment_error_infeasible("Self detect")
@@ -2793,6 +2793,9 @@ def Get_tot_cyc(Runshort,index_exp,Temp_K,Scan_i):
     elif Runshort == "War_long":
         if index_exp == 10:
             tot_cyc = 1000; cyc_age = 20; update = 20; ## Changed 241021
+    elif Runshort == "War_short":
+        if index_exp == 10:
+            tot_cyc = 40; cyc_age = 20; update = 20; ## Changed 241021
     elif Runshort == "Reservoir":
         pass
 

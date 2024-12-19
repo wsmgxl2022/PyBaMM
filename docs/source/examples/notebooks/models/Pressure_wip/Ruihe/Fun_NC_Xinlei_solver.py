@@ -541,12 +541,12 @@ def Run_Model_Base_On_Last_Solution(
                     Model_new,
                     experiment = ModelExperiment, 
                     parameter_values=Para_update, 
-                    solver = pb.CasadiSolver(),
+                    solver = pb.IDAKLUSolver(),
                     var_pts = var_pts,
                     submesh_types=submesh_types )
                 Sol_new = Simnew.solve(
                     calc_esoh=False,
-                    save_at_cycles = Update_Cycles, #Revised 1129 to add more cycles 
+                    save_at_cycles = Update_Cycles,
                     callbacks=Call_Age)
                 if Call_Age.success == False:
                     raise Experiment_error_infeasible("Self detect")
@@ -555,7 +555,7 @@ def Run_Model_Base_On_Last_Solution(
                     Model_new,
                     experiment = ModelExperiment, 
                     parameter_values=Para_update, 
-                    solver = pb.CasadiSolver(return_solution_if_failed_early=True),
+                    solver = pb.IDAKLUSolver(return_solution_if_failed_early=True),
                     var_pts = var_pts,
                     submesh_types=submesh_types )
                 Sol_new = Simnew.solve(
@@ -693,7 +693,7 @@ def Run_Model_Base_On_Last_Solution_RPT(
         Model_new,
         experiment = ModelExperiment, 
         parameter_values=Para_update, 
-        solver = pb.CasadiSolver(),
+        solver = pb.IDAKLUSolver(),
         var_pts = var_pts,
         submesh_types=submesh_types
     )
@@ -1199,7 +1199,7 @@ def Run_Breakin(
     Sim_0    = pb.Simulation(
         Model_0,        experiment = Experiment_Breakin,
         parameter_values = Para_0,
-        solver = pb.CasadiSolver(),
+        solver = pb.IDAKLUSolver(),
         var_pts=var_pts,
         submesh_types=submesh_types) 
     Call_Breakin = RioCallback()
@@ -1224,7 +1224,7 @@ def Run_Breakin(
             Sim_0    = pb.Simulation(
                 Model_0,        experiment = Experiment_Breakin,
                 parameter_values = Para_0,
-                solver = pb.CasadiSolver(),
+                solver = pb.IDAKLUSolver(),
                 var_pts=var_pts,
                 submesh_types=submesh_types) 
             Call_Breakin = RioCallback()    
@@ -2792,7 +2792,7 @@ def Get_tot_cyc(Runshort,index_exp,Temp_K,Scan_i):
             tot_cyc = 100; cyc_age = 20; update = 20; ## Changed 241021
     elif Runshort == "War_long":
         if index_exp == 10:
-            tot_cyc = 1000; cyc_age = 20; update = 20; ## Changed 241021
+            tot_cyc = 500; cyc_age = 20; update = 20; ## Changed 241021
     elif Runshort == "Reservoir":
         pass
 
